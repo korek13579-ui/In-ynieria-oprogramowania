@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Panel Administratora (Pelna Kontrola)</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card p-3 mb-3 border-primary h-100">
+            <h4>1. Dodaj Salon</h4>
+            <form method="POST">
+                <input type="hidden" name="add_salon" value="1">
+                <input type="text" name="name" placeholder="Nazwa salonu" class="form-control mb-2" required>
+                <input type="text" name="address" placeholder="Adres" class="form-control mb-2" required>
+                <label class="small">Otwarte od:</label>
+                <input type="time" name="open_from" class="form-control mb-2" required>
+                <label class="small">Otwarte do:</label>
+                <input type="time" name="open_to" class="form-control mb-2" required>
+                <button class="btn btn-primary w-100">Dodaj Salon</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card p-3 mb-3 border-warning h-100">
+            <h4>2. Mianuj Szefa</h4>
+            <p class="small text-muted">Przypisz szefa do salonu:</p>
+            <form method="POST">
+                <input type="hidden" name="add_manager" value="1">
+                <select name="salon_id" class="form-control mb-2" required>
+                    <option value="" disabled selected>Wybierz salon...</option>
+                    {% for salon in salons %}
+                        <option value="{{ salon.id }}">{{ salon.name }} (ID: {{ salon.id }})</option>
+                    {% endfor %}
+                </select>
+                <input type="text" name="username" placeholder="Login Szefa" class="form-control mb-2" required>
+                <input type="password" name="password" placeholder="Haslo Szefa" class="form-control mb-2" required>
+                <button class="btn btn-warning w-100">Dodaj Szefa</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card p-3 mb-3 border-info h-100">
+            <h4>3. Dodaj Usluge (Globalnie)</h4>
+            <form method="POST">
+                <input type="hidden" name="add_service_global" value="1">
+                <select name="salon_id" class="form-control mb-2" required>
+                    <option value="" disabled selected>Wybierz salon...</option>
+                    {% for salon in salons %}
+                        <option value="{{ salon.id }}">{{ salon.name }}</option>
+                    {% endfor %}
+                </select>
+                <input type="text" name="name" placeholder="Nazwa uslugi" class="form-control mb-2" required>
+                <input type="number" name="duration" placeholder="Czas (min)" class="form-control mb-2" required>
+                <input type="number" name="price" placeholder="Cena (PLN)" class="form-control mb-2" required>
+                <button class="btn btn-info w-100">Dodaj Usluge</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<hr class="my-5">
+
+<h3>Baza Danych (Usuwanie i Podglad)</h3>
+
+<h4 class="mt-4">Salony</h4>
+<table class="table table-bordered table-sm">
+    <thead class="table-dark"><tr><th>ID</th><th>Nazwa</th><th>Godziny</th><th>Akcja</th></tr></thead>
+    <tbody>
+        {% for salon in salons %}
+        <tr>
+            <td>{{ salon.id }}</td>
+            <td>{{ salon.name }}<br><small>{{ salon.address }}</small></td>
+            <td>{{ salon.open_from }} - {{ salon.open_to }}</td>
+            <td>
+                <a href="/delete/salon/{{ salon.id }}" class="btn btn-danger btn-sm" onclick="return confirm('Czy na pewno usunac salon? Znikna tez jego pracownicy i uslugi!')">Usun Salon</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h4 class="mt-4">Wszyscy Uzytkownicy</h4>
+<table class="table table-bordered table-sm">
+    <thead class="table-dark"><tr><th>ID</th><th>Login</th><th>Rola</th><th>Salon ID</th><th>Akcja</th></tr></thead>
+    <tbody>
+        {% for user in users %}
+        <tr>
+            <td>{{ user.id }}</td>
+            <td>{{ user.username }}</td>
+            <td>
+                {% if user.role == 'admin' %}<span class="badge bg-dark">Admin</span>
+                {% elif user.role == 'szef' %}<span class="badge bg-warning text-dark">Szef</span>
+                {% elif user.role == 'pracownik' %}<span class="badge bg-info text-dark">Pracownik</span>
+                {% else %}<span class="badge bg-success">Klient</span>
+                {% endif %}
+            </td>
+            <td>{{ user.salon_id if user.salon_id else '-' }}</td>
+            <td>
+                {% if user.role != 'admin' %}
+                <a href="/delete/user/{{ user.id }}" class="btn btn-danger btn-sm" onclick="return confirm('Usunac uzytkownika?')">Usun Usera</a>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h4 class="mt-4">Wszystkie Uslugi</h4>
+<table class="table table-bordered table-sm">
+    <thead class="table-dark"><tr><th>Salon</th><th>Nazwa</th><th>Cena</th><th>Akcja</th></tr></thead>
+    <tbody>
+        {% for service in services %}
+        <tr>
+            <td>{{ service.salon.name }}</td>
+            <td>{{ service.name }}</td>
+            <td>{{ service.price }} PLN</td>
+            <td>
+                <a href="/delete/service/{{ service.id }}" class="btn btn-danger btn-sm" onclick="return confirm('Usunac usluge?')">Usun Usluge</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

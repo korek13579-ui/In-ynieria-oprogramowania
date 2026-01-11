@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-warning">
+            <div class="card-header bg-warning text-dark text-center">
+                <h4> Ocen Wizyte</h4>
+            </div>
+            <div class="card-body">
+                <p><strong>Usluga:</strong> {{ appointment.service.name }}</p>
+                <p><strong>Pracownik:</strong> {{ appointment.employee.username }}</p>
+                <p><strong>Data:</strong> {{ appointment.date }}</p>
+
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Twoja ocena:</label>
+                        <select name="rating" class="form-select text-warning fw-bold fs-5" required>
+                            <option value="5"> (5/5) - Super!</option>
+                            <option value="4"> (4/5) - Dobrze</option>
+                            <option value="3"> (3/5) - Srednio</option>
+                            <option value="2"> (2/5) - Slabo</option>
+                            <option value="1"> (1/5) - Tragicznie</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Komentarz (opcjonalnie):</label>
+                        <textarea name="comment" class="form-control" rows="3" placeholder="Co Ci sie podobalo?"></textarea>
+                    </div>
+
+                    <button class="btn btn-warning w-100 fw-bold">Wyslij Opinie</button>
+                    <a href="/client" class="btn btn-link text-muted w-100 mt-2">Anuluj</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

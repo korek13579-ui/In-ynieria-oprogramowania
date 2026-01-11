@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="text-center mt-5">
+    <h1>Witamy w systemie rezerwacji!</h1>
+    <p class="lead">Zaloguj sie, aby umowic wizyte lub zarzadzac salonem.</p>
+    {% if current_user.is_authenticated and current_user.role == 'klient' %}
+        <a href="{{ url_for('booking_date') }}" class="btn btn-success btn-lg"> Umow wizyte</a>
+    {% endif %}
+    
+    {% if current_user.role == 'admin' %} <a href="/admin" class="btn btn-dark">Panel Admina</a> {% endif %}
+    {% if current_user.role == 'szef' %} <a href="/manager" class="btn btn-warning">Panel Szefa</a> {% endif %}
+    {% if current_user.role == 'pracownik' %} <a href="/employee" class="btn btn-info">Panel Pracownika</a> {% endif %}
+</div>
+{% endblock %}

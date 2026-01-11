@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="text-center mb-4">Wybierz Pracownika</h2>
+
+<div class="row justify-content-center">
+    {% for emp in employees %}
+    <div class="col-md-4 mb-3">
+        <div class="card h-100 {% if not emp.is_working %}border-danger bg-light text-muted{% else %}border-primary shadow-sm{% endif %}">
+            <div class="card-body text-center">
+                <h5 class="card-title fw-bold mb-0">{{ emp.user.username }}</h5>
+                <p class="text-muted small">{{ emp.user.role }}</p>
+                
+                <div class="mb-2">
+                    {% if emp.reviews_count > 0 %}
+                        <div class="text-warning fs-5 fw-bold">{{ emp.rating }} / 5</div>
+                        <button type="button" class="btn btn-link btn-sm text-decoration-none" data-bs-toggle="modal" data-bs-target="#reviewsModal{{ emp.user.id }}">
+                            Zobacz {{ emp.reviews_count }} opinii
+                        </button>
+                    {% else %}
+                        <small class="text-muted">Brak opinii</small>
+                    {% endif %}
+                </div>
+
+                {% if emp.is_working %}
+                    <a href="/book/time/{{ date }}/{{ salon_id }}/{{ service_id }}/{{ emp.user.id }}" class="btn btn-primary w-100">Wybierz</a>
+                {% else %}
+                    <button class="btn btn-secondary w-100" disabled>Nie pracuje w ten dzien</button>
+                    {% if emp.next_available_date %}
+                        <div class="mt-2 small text-danger">Wolny od: <a href="/book/salon/{{ emp.next_available_date }}" class="fw-bold">{{ emp.next_available_date }}</a></div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="modal fade" id="reviewsModal{{ emp.user.id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Opinie o: {{ emp.user.username }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body text-start">
+                        {% if emp.reviews_list %}
+                            {% for rev in emp.reviews_list %}
+                            <div class="mb-3 border-bottom pb-2">
+                                <div class="d-flex justify-content-between">
+                                    <span class="text-warning">{{ rev.rating }}/5</span>
+                                    <small class="text-muted">{{ rev.created_at }}</small>
+                                </div>
+                                <p class="mb-1 fst-italic">"{{ rev.comment }}"</p>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p>Brak szczegolowych komentarzy.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="text-center mt-3">
+    <a href="/book/service/{{ date }}/{{ salon_id }}" class="btn btn-outline-secondary"> Wroc</a>
+</div>
+{% endblock %}

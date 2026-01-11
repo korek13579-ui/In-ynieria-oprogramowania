@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Twoje wizyty</h2>
+<a href="{{ url_for('booking_date') }}" class="btn btn-success mb-3">+ Umow nowa wizyte</a>
+
+<table class="table table-bordered table-hover align-middle mb-5">
+    <thead class="table-dark">
+        <tr><th>Data</th><th>Godzina</th><th>Pracownik</th><th>Usluga</th><th>Status</th><th>Akcja</th></tr>
+    </thead>
+    <tbody>
+        {% for app in appointments %}
+        <tr>
+            <td>{{ app.date }}<br><strong>{{ app.time }}</strong></td>
+            <td>{{ app.employee.username if app.employee else '?' }}</td>
+            <td>{{ app.service.name }}</td>
+            <td>
+                {% if app.status == 'oczekuje' %}<span class="badge bg-warning text-dark">Oczekuje</span>
+                {% elif app.status == 'potwierdzona' %}<span class="badge bg-success">Potwierdzona</span>
+                {% elif app.status == 'zrealizowana' %}<span class="badge bg-secondary">Zakonczona</span>
+                {% elif app.status == 'zmiana_terminu' %}<div class="alert alert-info p-1 mb-0 small">Zmiana:<br>{{ app.proposed_date }} {{ app.proposed_time }}</div>
+                {% else %}<span class="badge bg-danger">Odrzucona</span>{% endif %}
+            </td>
+            <td>
+                {% if app.status == 'zmiana_terminu' %}
+                    <a href="/client/respond/{{ app.id }}/accept" class="btn btn-success btn-sm">Akceptuj</a>
+                    <a href="/client/respond/{{ app.id }}/reject" class="btn btn-danger btn-sm">Odrzuc</a>
+                {% elif app.status == 'zrealizowana' %}
+                    {% if app.review_obj %}
+                        <span class="text-warning">{{ app.review_obj.rating }}/5</span>
+                    {% else %}
+                        <a href="/client/review/{{ app.id }}" class="btn btn-warning btn-sm">Ocen</a>
+                    {% endif %}
+                {% elif app.status == 'odrzucona' %}-
+                {% else %}
+                    <a href="/client/cancel/{{ app.id }}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Anulowac?')">Anuluj</a>
+                {% endif %}
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-center">Brak wizyt.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

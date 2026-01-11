@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Rejestracja Klienta</h2>
+<form method="POST" style="max-width: 400px;">
+    <input type="text" name="username" placeholder="Wymysl login" class="form-control mb-2" required>
+    <input type="password" name="password" placeholder="Wymysl haslo" class="form-control mb-2" required>
+    <button type="submit" class="btn btn-success">Zarejestruj</button>
+</form>
+{% endblock %}

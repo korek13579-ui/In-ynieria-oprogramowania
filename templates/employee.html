@@ -1,0 +1,294 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Panel Pracownika: {{ current_user.username }}</h2>
+    <div class="alert alert-success py-1 px-3 m-0 shadow-sm">
+         💰 Zarobek (Netto): <strong>{{ earnings }} PLN</strong>
+    </div>
+</div>
+
+<ul class="nav nav-tabs mb-4" id="employeeTab" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-bold" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab">
+             📥 Oczekujące ({{ pending_appointments|length }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active fw-bold" id="schedule-tab" data-bs-toggle="tab" data-bs-target="#schedule" type="button" role="tab">
+             📅 Mój Grafik
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="employeeTabContent">
+    
+    <div class="tab-pane fade" id="pending" role="tabpanel">
+        <div class="card border-warning shadow-sm">
+            <div class="card-header bg-warning text-dark fw-bold">Wizyty do zatwierdzenia</div>
+            <div class="card-body p-0">
+                {% if pending_appointments %}
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr><th>Data</th><th>Godzina</th><th>Klient</th><th>Usługa</th><th>Akcja</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for app in pending_appointments %}
+                        <tr>
+                            <td>{{ app.date }}</td>
+                            <td>{{ app.time }}</td>
+                            <td>{{ app.client.username }}</td>
+                            <td>{{ app.service.name }}</td>
+                            <td>
+                                <form method="POST" class="d-flex gap-2">
+                                    <input type="hidden" name="appointment_id" value="{{ app.id }}">
+                                    <button name="action" value="confirm" class="btn btn-success btn-sm">✔</button>
+                                    <button name="action" value="reject" class="btn btn-danger btn-sm">✘</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                    <div class="p-5 text-center text-muted">Brak nowych zgłoszeń.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade show active" id="schedule" role="tabpanel">
+        
+        <div class="card mb-4 border-primary shadow-sm">
+            <div class="card-header bg-primary text-white d-flex justify-content-between">
+                <span>📅 <strong>Dzisiejszy Plan ({{ today_date }})</strong></span>
+                <span>
+                    {% if today_schedule.is_working %}✅ Pracujesz: {{ today_schedule.start }} - {{ today_schedule.end }}{% else %}🏖️ Masz WOLNE{% endif %}
+                </span>
+            </div>
+            <div class="card-body p-0">
+                {% if today_schedule.apps %}
+                    <table class="table table-striped mb-0">
+                        <thead><tr><th>Godz</th><th>Klient</th><th>Usługa</th><th>Status</th></tr></thead>
+                        <tbody>
+                            {% for app in today_schedule.apps %}
+                            <tr>
+                                <td>{{ app.time }}</td>
+                                <td>{{ app.client }}</td>
+                                <td>{{ app.service }}</td>
+                                <td><span class="badge bg-secondary">{{ app.status }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p class="text-center p-3 m-0 text-muted">Brak zaplanowanych wizyt na dzisiaj.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card mb-4 border-0 shadow-sm">
+            <div class="card-header bg-white border-0">
+                <div class="d-flex justify-content-between align-items-center">
+                    <a href="?year={{ nav.py }}&month={{ nav.pm }}" class="btn btn-outline-secondary btn-sm">&larr; Poprzedni</a>
+                    <h4 class="m-0 text-primary">Grafik: {{ nav.cm }}/{{ nav.cy }}</h4>
+                    <a href="?year={{ nav.ny }}&month={{ nav.nm }}" class="btn btn-outline-secondary btn-sm">Następny &rarr;</a>
+                </div>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-2 text-center">Kliknij w dzień, aby edytować grafik lub zarządzać wizytami.</p>
+                
+                <div class="d-flex flex-wrap gap-2 justify-content-center">
+                    {% for day in calendar_days %}
+                    <button type="button" 
+                            class="btn p-1 d-flex flex-column align-items-center justify-content-between shadow-sm position-relative calendar-day-btn"
+                            style="width: 100px; height: 100px; 
+                                   background-color: {% if day.is_working %}#d1e7dd{% else %}#f8d7da{% endif %}; 
+                                   border: {% if day.is_today %}3px solid #0d6efd{% else %}1px solid {% if day.is_working %}#badbcc{% else %}#f5c2c7{% endif %}{% endif %};
+                                   {% if day.has_override %}border-bottom: 4px solid #000;{% endif %}"
+                            data-date="{{ day.date }}"
+                            data-working="{{ day.is_working }}"
+                            data-start="{{ day.start }}"
+                            data-end="{{ day.end }}"
+                            data-bs="{{ day.bs }}"
+                            data-be="{{ day.be }}"
+                            data-apps='{{ day.appointments | tojson | safe }}'
+                            onclick="openDayModal(this)">
+                        
+                        <div class="d-flex justify-content-between w-100 px-1">
+                            <span class="fw-bold fs-5">{{ day.day }}</span>
+                            {% if day.apps_count > 0 %}
+                                <span class="badge bg-primary rounded-pill" style="font-size: 0.6rem;">{{ day.apps_count }}</span>
+                            {% endif %}
+                        </div>
+                        
+                        <small style="font-size: 0.7rem;">
+                            {% if day.is_working %}{{ day.start }}-{{ day.end }}{% else %}WOLNE{% endif %}
+                        </small>
+                        
+                        {% if day.is_today %}
+                            <span class="badge bg-primary mt-1" style="font-size: 0.5rem;">DZIŚ</span>
+                        {% endif %}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="dayModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content shadow">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title">Szczegóły: <span id="modalDateDisplay" class="fw-bold text-warning"></span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            
+            <div class="modal-body p-0">
+                <div class="row g-0">
+                    
+                    <div class="col-md-7 p-3 border-end">
+                        <h6 class="fw-bold border-bottom pb-2 mb-3">📅 Wizyty tego dnia</h6>
+                        <div id="modalAppsList"></div>
+                    </div>
+
+                    <div class="col-md-5 p-3 bg-light">
+                        <form method="POST">
+                            <h6 class="fw-bold border-bottom pb-2 mb-3">⚙️ Grafik</h6>
+                            <input type="hidden" name="update_day_schedule" value="1">
+                            <input type="hidden" name="date_to_edit" id="modalDateInput">
+                            
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" name="is_working" id="modalIsWorking">
+                                <label class="form-check-label fw-bold" for="modalIsWorking">Pracuję</label>
+                            </div>
+
+                            <div id="workingHoursInputs">
+                                <div class="mb-2">
+                                    <label class="small fw-bold">Zmiana:</label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="time" name="start_time" id="modalStart" class="form-control">
+                                        <span class="input-group-text">-</span>
+                                        <input type="time" name="end_time" id="modalEnd" class="form-control">
+                                    </div>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="small text-muted">Przerwa:</label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="time" name="break_start" id="modalBreakStart" class="form-control">
+                                        <span class="input-group-text">-</span>
+                                        <input type="time" name="break_end" id="modalBreakEnd" class="form-control">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-4 text-end">
+                                <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold">Zapisz Grafik</button>
+                            </div>
+                        </form>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Przekazanie slotów czasowych z Pythona do JS
+    var globalTimeSlots = {{ time_slots | tojson }};
+
+    document.addEventListener("DOMContentLoaded", function() {
+        var modalEl = document.getElementById('dayModal');
+        var dayModal = new bootstrap.Modal(modalEl);
+
+        window.openDayModal = function(btn) {
+            // Dane z kafelka
+            var date = btn.getAttribute('data-date');
+            var isWorking = btn.getAttribute('data-working');
+            var start = btn.getAttribute('data-start');
+            var end = btn.getAttribute('data-end');
+            var bs = btn.getAttribute('data-bs');
+            var be = btn.getAttribute('data-be');
+            var appsData = JSON.parse(btn.getAttribute('data-apps'));
+
+            // Ustawianie sekcji Grafiku
+            document.getElementById('modalDateDisplay').innerText = date;
+            document.getElementById('modalDateInput').value = date;
+            
+            var check = document.getElementById('modalIsWorking');
+            check.checked = (isWorking === 'True');
+            document.getElementById('modalStart').value = start;
+            document.getElementById('modalEnd').value = end;
+            document.getElementById('modalBreakStart').value = bs;
+            document.getElementById('modalBreakEnd').value = be;
+            
+            var inputsDiv = document.getElementById('workingHoursInputs');
+            function toggleInputs() { inputsDiv.style.display = check.checked ? 'block' : 'none'; }
+            check.onchange = toggleInputs;
+            toggleInputs();
+
+            // Budowanie listy wizyt
+            var listContainer = document.getElementById('modalAppsList');
+            if (appsData.length === 0) {
+                listContainer.innerHTML = '<div class="text-center text-muted py-4"><p>Brak wizyt.</p></div>';
+            } else {
+                var html = '<div class="list-group list-group-flush">';
+                appsData.forEach(function(app) {
+                    var statusBadge = app.status === 'potwierdzona' ? '<span class="badge bg-primary">Potwierdzona</span>' : 
+                                      app.status === 'zrealizowana' ? '<span class="badge bg-success">Zrealizowana</span>' : 
+                                      '<span class="badge bg-secondary">' + app.status + '</span>';
+                    
+                    var actionArea = '';
+                    if(app.status === 'potwierdzona') {
+                        // Budowanie listy opcji dla selecta czasu
+                        var optionsHtml = '';
+                        globalTimeSlots.forEach(function(t) {
+                            optionsHtml += `<option value="${t}">${t}</option>`;
+                        });
+
+                        actionArea = `
+                            <div class="mt-2 pt-2 border-top">
+                                <form method="POST" class="d-flex gap-1 mb-2">
+                                    <input type="hidden" name="appointment_id" value="${app.id}">
+                                    <button name="action" value="complete" class="btn btn-success btn-sm w-100 fw-bold">✔ Zrealizuj</button>
+                                </form>
+                                
+                                <details>
+                                    <summary class="btn btn-outline-secondary btn-sm w-100 py-0" style="font-size: 0.8rem;">Zmień termin</summary>
+                                    <form method="POST" class="bg-white p-2 border rounded mt-1">
+                                        <input type="hidden" name="action" value="propose_change">
+                                        <input type="hidden" name="appointment_id" value="${app.id}">
+                                        
+                                        <label class="small text-muted">Nowa data:</label>
+                                        <input type="date" name="new_date" class="form-control form-control-sm mb-1" required>
+                                        
+                                        <label class="small text-muted">Nowa godzina:</label>
+                                        <select name="new_time" class="form-select form-select-sm mb-2" required>
+                                            ${optionsHtml}
+                                        </select>
+                                        
+                                        <button class="btn btn-info btn-sm w-100 text-white fw-bold">Wyślij propozycję</button>
+                                    </form>
+                                </details>
+                            </div>`;
+                    }
+
+                    html += `
+                        <div class="list-group-item px-0 pb-3">
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <div><h6 class="mb-0 fw-bold">${app.time} - ${app.client}</h6><small class="text-muted">${app.service}</small></div>
+                                ${statusBadge}
+                            </div>
+                            ${actionArea}
+                        </div>`;
+                });
+                html += '</div>';
+                listContainer.innerHTML = html;
+            }
+            dayModal.show();
+        };
+    });
+</script>
+{% endblock %}

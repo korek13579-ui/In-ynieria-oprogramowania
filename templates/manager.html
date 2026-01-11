@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="alert alert-info d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+        <span class="fs-5"> Salon: <strong>{{ salon.name }}</strong></span><br>
+        <small>Szef: {{ current_user.username }}</small>
+    </div>
+    <div class="text-end">
+        <span class="badge bg-warning text-dark fs-6 me-2">{{ salon_avg_rating }} ({{ total_reviews_count }} opinii)</span>
+        <span class="badge bg-success fs-6">Zysk: {{ salon_net_profit }} PLN</span>
+    </div>
+</div>
+
+<div class="mb-3 text-end">
+    <a href="/employee" class="btn btn-outline-dark">Moje wizyty i Grafik</a>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card p-3 mb-3 bg-light">
+            <h5> Godziny</h5>
+            <form method="POST" class="d-flex gap-2 align-items-end">
+                <input type="hidden" name="update_hours" value="1">
+                <div><label class="small">Od:</label><input type="time" name="open_from" value="{{ salon.open_from }}" class="form-control"></div>
+                <div><label class="small">Do:</label><input type="time" name="open_to" value="{{ salon.open_to }}" class="form-control"></div>
+                <button class="btn btn-primary btn-sm">OK</button>
+            </form>
+        </div>
+        <div class="card p-3 mb-3 border-success">
+            <h5 class="text-success"> Marza</h5>
+            <form method="POST">
+                <input type="hidden" name="update_margin" value="1">
+                <select name="margin_type" class="form-control mb-2">
+                    <option value="percent" {% if salon.margin_type == 'percent' %}selected{% endif %}>Procent (%)</option>
+                    <option value="fixed" {% if salon.margin_type == 'fixed' %}selected{% endif %}>Kwota (PLN)</option>
+                </select>
+                <input type="number" step="0.01" name="margin_value" value="{{ salon.margin_value }}" class="form-control mb-2" required>
+                <button class="btn btn-success w-100 btn-sm">Zapisz</button>
+            </form>
+        </div>
+        <div class="card p-3 mb-3">
+             <h5>Dodaj Pracownika</h5>
+             <form method="POST">
+                <input type="hidden" name="add_employee" value="1">
+                <input type="text" name="username" placeholder="Login" class="form-control mb-1" required>
+                <input type="password" name="password" placeholder="Haslo" class="form-control mb-1" required>
+                <button class="btn btn-info btn-sm w-100">Dodaj</button>
+             </form>
+        </div>
+        <div class="card p-3 mb-3">
+             <h5>Dodaj Usluge</h5>
+             <form method="POST">
+                <input type="hidden" name="add_service" value="1">
+                <input type="text" name="name" placeholder="Nazwa" class="form-control mb-1" required>
+                <input type="number" name="duration" placeholder="Min" class="form-control mb-1" required>
+                <input type="number" name="price" placeholder="PLN" class="form-control mb-1" required>
+                <button class="btn btn-success btn-sm w-100">Dodaj</button>
+             </form>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <h3> Raport Pracownikow</h3>
+        
+        {% for member in staff_report %}
+        <div class="card mb-3 shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>
+                    <strong>{{ member.username }}</strong> 
+                    <span class="badge bg-secondary">{{ member.role }}</span>
+                    <span class="text-warning fw-bold ms-2">{{ member.avg_rating }} / 5</span>
+                    <small class="text-muted">({{ member.reviews_count }})</small>
+                </span>
+                <div class="text-end">
+                    <span class="text-muted small">Wygenerowal:</span> <strong>{{ member.gross }} PLN</strong> | 
+                    <span class="text-success fw-bold">Do wyplaty: {{ member.net }} PLN</span>
+                    {% if member.role == 'pracownik' %}
+                        <a href="/manager/delete/employee/{{ employees|selectattr('username', 'equalto', member.username)|map(attribute='id')|first }}" class="btn btn-danger btn-sm ms-2 px-1 py-0" onclick="return confirm('Usunac?')">X</a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body p-2">
+                <h6 class="card-title text-muted border-bottom pb-1">Nadchodzace wizyty:</h6>
+                {% if member.upcoming %}
+                    <ul class="list-group list-group-flush small">
+                    {% for app in member.upcoming %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span> {{ app.date }} {{ app.time }}</span>
+                            <span>{{ app.service.name }} (Klient: {{ app.client.username }})</span>
+                        </li>
+                    {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="small text-muted mb-0">Brak zaplanowanych wizyt.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+        
+        <h4 class="mt-4">Lista Uslug</h4>
+        <ul class="list-group">
+            {% for s in services %}
+            <li class="list-group-item d-flex justify-content-between p-1">
+                {{ s.name }} ({{ s.price }}zl)
+                <a href="/manager/delete/service/{{ s.id }}" class="text-danger text-decoration-none" onclick="return confirm('Usunac?')">Usun</a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}
